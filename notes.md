@@ -18,6 +18,10 @@ github-actions-deployer
 workload identity provider:
 projects/438521257165/locations/global/workloadIdentityPools/github-pool/providers/github-provider
 
+https://iam.googleapis.com/projects/438521257165/locations/global/workloadIdentityPools/github-actions-pool/providers/github
+
+
+
 service account email
 github-actions-sa@cicd-demo-460905.iam.gserviceaccount.com
 

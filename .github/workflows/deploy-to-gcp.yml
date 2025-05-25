@@ -18,6 +18,7 @@ jobs:
       REPOSITORY_GCP: my-docker-repo
       IMAGE_NAME: my-app
       IMAGE_TAG: latest
+      COMMIT_SHA: ${{ github.sha }}
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
@@ -43,6 +44,21 @@ jobs:
         run: |
           DOCKER_BUILDKIT=1 docker build \
             -t ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
+            --label "org.opencontainers.image.title=My Application" \
+            --label "org.opencontainers.image.description=Node.js application deployed via GitHub Actions" \
+            --label "org.opencontainers.image.version=${{ env.IMAGE_TAG }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}" \
+            --label "org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}/blob/main/README.md" \
+            --label "org.opencontainers.image.vendor=${{ github.repository_owner }}" \
+            --label "org.opencontainers.image.licenses=MIT" \
+            --label "build.number=${{ github.run_number }}" \
+            --label "build.id=${{ github.run_id }}" \
+            --label "git.branch=${{ github.ref_name }}" \
+            --label "git.commit=${{ github.sha }}" \
+            --label "git.commit.short=${{ github.sha }}" \
             --secret id=env,src=.env.docker \
             .
 
@@ -64,36 +80,18 @@ jobs:
 
       - name: Tag image for Google Cloud
         run: |
+          # Tag with latest
           docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
+          # Tag with commit SHA
+          docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
+
       - name: Push image to Artifact Registry
         run: |
+          # Push latest tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
 
-  deploy:
-    runs-on: ubuntu-22.04
-    needs: [build_and_push_gcp]
-    env:
-      CLUSTER_NAME: my-gke-cluster
-      CLUSTER_ZONE: us-central1
-    steps:
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ env.CLUSTER_NAME }}
-          location: ${{ env.CLUSTER_ZONE }}
-
-      - name: Deploy to GKE
-        run: |
-          kubectl set image deployment/my-app-deployment \
-            my-app=${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
-            -n default
-          kubectl rollout status deployment/my-app-deployment -n default
+          # Push commit SHA tag
+          docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
