@@ -1,27 +1,6 @@
 # Use official Node.js runtime as base image
 FROM node:20-alpine
 
-# Build arguments for dynamic labels
-ARG BUILD_DATE
-ARG VCS_REF
-ARG VERSION=1.0.0
-ARG BUILD_NUMBER
-
-# Add labels for image metadata and description
-LABEL maintainer="your-email@example.com"
-LABEL description="Node.js application with CI/CD pipeline for GCP deployment"
-LABEL version="${VERSION}"
-LABEL org.opencontainers.image.title="My Node.js App"
-LABEL org.opencontainers.image.description="A production-ready Node.js application with Docker containerization and GCP deployment"
-LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.vendor="Your Company Name"
-LABEL org.opencontainers.image.licenses="MIT"
-LABEL org.opencontainers.image.source="https://github.com/your-username/your-repo"
-LABEL org.opencontainers.image.documentation="https://github.com/your-username/your-repo/blob/main/README.md"
-LABEL org.opencontainers.image.created="${BUILD_DATE}"
-LABEL org.opencontainers.image.revision="${VCS_REF}"
-LABEL build.number="${BUILD_NUMBER}"
-
 # Set working directory in container
 WORKDIR /app
 

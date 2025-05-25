@@ -22,6 +22,17 @@ jobs:
     steps:
       - name: Checkout the repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for tags
+
+      - name: Get version from Git tag
+        id: version
+        run: |
+          # Get the latest tag, fallback to 'dev' if no tags exist
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+          # Keep the 'v' prefix (v1.2.3 stays as v1.2.3)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -42,13 +53,8 @@ jobs:
 
       - name: Build Docker image
         run: |
-          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           DOCKER_BUILDKIT=1 docker build \
             -t ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
-            --build-arg BUILD_DATE="${BUILD_DATE}" \
-            --build-arg VCS_REF="${{ env.COMMIT_SHA }}" \
-            --build-arg VERSION="${{ env.IMAGE_TAG }}" \
-            --build-arg BUILD_NUMBER="${{ github.run_number }}" \
             --secret id=env,src=.env.docker \
             .
 
@@ -78,6 +84,10 @@ jobs:
           docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
 
+          # Tag with version
+          docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+
       - name: Push image to Artifact Registry
         run: |
           # Push latest tag
@@ -86,22 +96,5 @@ jobs:
           # Push commit SHA tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
 
-      - name: Add image descriptions and annotations
-        run: |
-          # Set description for the latest tag
-          gcloud artifacts docker images describe \
-            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
-            --format="value(name)" > /dev/null || true
-
-          # Add annotations to the image
-          gcloud artifacts docker images add-tag \
-            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
-            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:build-${{ github.run_number }} || true
-
-          # You can also use gcloud to add custom metadata
-          echo "Image pushed successfully with the following details:"
-          echo "- Repository: ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}"
-          echo "- Tags: ${{ env.IMAGE_TAG }}, ${{ env.COMMIT_SHA }}, build-${{ github.run_number }}"
-          echo "- Build Date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-          echo "- Commit SHA: ${{ env.COMMIT_SHA }}"
-          echo "- Build Number: ${{ github.run_number }}"
+          # Push version tag
+          docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
