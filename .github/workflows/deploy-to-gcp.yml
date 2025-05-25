@@ -42,23 +42,13 @@ jobs:
 
       - name: Build Docker image
         run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           DOCKER_BUILDKIT=1 docker build \
             -t ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
-            --label "org.opencontainers.image.title=My Application" \
-            --label "org.opencontainers.image.description=Node.js application deployed via GitHub Actions" \
-            --label "org.opencontainers.image.version=${{ env.IMAGE_TAG }}" \
-            --label "org.opencontainers.image.revision=${{ github.sha }}" \
-            --label "org.opencontainers.image.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
-            --label "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
-            --label "org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}" \
-            --label "org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}/blob/main/README.md" \
-            --label "org.opencontainers.image.vendor=${{ github.repository_owner }}" \
-            --label "org.opencontainers.image.licenses=MIT" \
-            --label "build.number=${{ github.run_number }}" \
-            --label "build.id=${{ github.run_id }}" \
-            --label "git.branch=${{ github.ref_name }}" \
-            --label "git.commit=${{ github.sha }}" \
-            --label "git.commit.short=${{ github.sha }}" \
+            --build-arg BUILD_DATE="${BUILD_DATE}" \
+            --build-arg VCS_REF="${{ env.COMMIT_SHA }}" \
+            --build-arg VERSION="${{ env.IMAGE_TAG }}" \
+            --build-arg BUILD_NUMBER="${{ github.run_number }}" \
             --secret id=env,src=.env.docker \
             .
 
@@ -95,3 +85,23 @@ jobs:
 
           # Push commit SHA tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
+
+      - name: Add image descriptions and annotations
+        run: |
+          # Set description for the latest tag
+          gcloud artifacts docker images describe \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            --format="value(name)" > /dev/null || true
+
+          # Add annotations to the image
+          gcloud artifacts docker images add-tag \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:build-${{ github.run_number }} || true
+
+          # You can also use gcloud to add custom metadata
+          echo "Image pushed successfully with the following details:"
+          echo "- Repository: ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}"
+          echo "- Tags: ${{ env.IMAGE_TAG }}, ${{ env.COMMIT_SHA }}, build-${{ github.run_number }}"
+          echo "- Build Date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "- Commit SHA: ${{ env.COMMIT_SHA }}"
+          echo "- Build Number: ${{ github.run_number }}"
