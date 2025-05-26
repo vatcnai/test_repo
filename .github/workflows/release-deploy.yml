@@ -32,11 +32,6 @@ jobs:
         run: |
           # Create a new tag for the existing latest image directly in the registry
           gcloud container images add-tag \
-            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:beta \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }} \
             --quiet
-
-      - name: Notify tagging success
-        run: |
-          echo "✅ Successfully tagged release ${{ env.RELEASE_TAG }}"
-          echo "Image: ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }}"
