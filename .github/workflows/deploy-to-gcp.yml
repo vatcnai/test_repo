@@ -98,3 +98,9 @@ jobs:
 
           # Push version tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
+
+      - name: Add metadata to Docker image in Artifact Registry
+        run: |
+          gcloud artifacts docker images update \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            --update-labels="version=${{ steps.version.outputs.VERSION }},commit-sha=${{ env.COMMIT_SHA }}"
