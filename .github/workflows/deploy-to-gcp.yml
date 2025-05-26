@@ -98,7 +98,3 @@ jobs:
 
           # Push version tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
-
-          - name: Set description for Docker image in Artifact Registry
-          run: |
-            gcloud artifacts docker images update ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} --description="Version: ${{ env.IMAGE_TAG }}"
