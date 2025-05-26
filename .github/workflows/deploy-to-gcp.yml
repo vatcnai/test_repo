@@ -28,7 +28,7 @@ jobs:
       - name: Get version from Git tag
         id: version
         run: |
-          VERSION=$(git tag --points-at HEAD)
+          VERSION=$(git tag --points-at HEAD || echo "no-release-tag")
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Set up Node.js
