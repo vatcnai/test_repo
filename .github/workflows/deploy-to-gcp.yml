@@ -28,8 +28,10 @@ jobs:
       - name: Get version from Git tag
         id: version
         run: |
-          VERSION=$(git tag --points-at HEAD || echo "no-release-tag")
+          # Get tag that points to current commit, fallback to 'no-release-tag'
+          VERSION=$(git tag --points-at HEAD | head -1 || echo "no-release-tag")
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Found version: $VERSION"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
