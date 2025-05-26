@@ -29,7 +29,8 @@ jobs:
         id: version
         run: |
           # Get tag that points to current commit, fallback to 'no-release-tag'
-          VERSION=$(git tag --points-at HEAD | head -1 || echo "no-release-tag")
+          VERSION=$(git tag --points-at HEAD | head -1)
+          VERSION=${VERSION:-"no-release-tag"}
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
 
