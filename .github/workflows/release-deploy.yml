@@ -30,7 +30,6 @@ jobs:
 
       - name: Tag existing image with release version
         run: |
-          # Create a new tag for the existing latest image directly in the registry
           gcloud container images add-tag \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:beta \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }} \
