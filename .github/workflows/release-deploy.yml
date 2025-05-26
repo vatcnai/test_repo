@@ -1,0 +1,42 @@
+name: Tag Release Image
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: "read"
+  id-token: "write"
+  packages: "read"
+
+jobs:
+  tag_release_image:
+    runs-on: ubuntu-22.04
+    env:
+      REGISTRY_GCP: us-central1-docker.pkg.dev/cicd-demo-460905
+      REPOSITORY_GCP: my-docker-repo
+      IMAGE_NAME: my-app
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Tag existing image with release version
+        run: |
+          # Create a new tag for the existing latest image directly in the registry
+          gcloud container images add-tag \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }} \
+            --quiet
+
+      - name: Notify tagging success
+        run: |
+          echo "✅ Successfully tagged release ${{ env.RELEASE_TAG }}"
+          echo "Image: ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.RELEASE_TAG }}"

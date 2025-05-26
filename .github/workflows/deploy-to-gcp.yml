@@ -25,15 +25,6 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for tags
 
-      - name: Get version from Git tag
-        id: version
-        run: |
-          # Get tag that points to current commit, fallback to 'no-release-tag'
-          VERSION=$(git tag --points-at HEAD | head -1)
-          VERSION=${VERSION:-"no-release-tag"}
-          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Found version: $VERSION"
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -84,10 +75,6 @@ jobs:
           docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
             ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
 
-          # Tag with version
-          docker tag ${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }} \
-            ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
-
       - name: Push image to Artifact Registry
         run: |
           # Push latest tag
@@ -95,6 +82,3 @@ jobs:
 
           # Push commit SHA tag
           docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
-
-          # Push version tag
-          docker push ${{ env.REGISTRY_GCP }}/${{ env.REPOSITORY_GCP }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.VERSION }}
