@@ -28,8 +28,8 @@ jobs:
       - name: Get version from Git tag
         id: version
         run: |
-          # Get the latest tag, fallback to 'dev' if no tags exist
-          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
+          # Get the latest tag, fallback to 'no-release' if no tags exist
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "no-release")
           # Keep the 'v' prefix (v1.2.3 stays as v1.2.3)
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
